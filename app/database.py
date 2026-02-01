@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import sessionmaker, DeclarativeBase, Session
 
 DATABASE_URL = "sqlite:///./test.db" 
 
@@ -8,7 +8,7 @@ engine = create_engine(
     connect_args={"check_same_thread": False} 
 )
 
-SessionLocal = sessionmaker(
+SessionLocal = sessionmaker[Session](
     autocommit=False,
     autoflush=False,
     bind=engine
@@ -16,3 +16,10 @@ SessionLocal = sessionmaker(
 
 class Base(DeclarativeBase):
     pass
+
+def get_db() -> Session:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
