@@ -3,6 +3,9 @@ from app.models.stock import Stock
 
 
 class StockService:
+    '''
+    Classe de serviços para gerenciar o estoque
+    '''
 
     @staticmethod
     def get_stock(

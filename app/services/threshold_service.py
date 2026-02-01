@@ -1,13 +1,11 @@
 from sqlalchemy.orm import Session
 from app.models.stock import StockThreshold
 
-'''
-Serviço que gerencia os thresholds de estoque.
-Será consultado antes de chamar a LLM para tomar uma decisão.
-'''
-
 
 class ThresholdService:
+    '''
+    Classe de serviços para gerenciar os thresholds de estoque.
+    '''
 
     @staticmethod
     def get_threshold(
@@ -27,7 +25,7 @@ class ThresholdService:
         return stock_threshold_query.first()
 
     @staticmethod
-    def hreshold(
+    def update_threshold(
         db: Session,
         tenant_id: int,
         product_id: int,

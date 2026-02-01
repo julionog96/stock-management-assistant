@@ -3,14 +3,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services.stock_service import StockService
+from app.auth.auth import get_current_tenant
 
 router = APIRouter(prefix="/stocks")
 
 
-@router.get("/{tenant_id}/{product_id}")
+@router.get("/{product_id}")
 def get_stock(
-    tenant_id: int,
     product_id: int,
+    tenant_id: int = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
     stock = StockService.get_stock(
