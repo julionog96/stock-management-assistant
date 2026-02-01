@@ -19,7 +19,7 @@ class ThresholdService:
             raise ValueError("Tenant ID is required")
         if not product_id:
             raise ValueError("Product ID is required")
-          
+      
         stock_threshold_query = db.query(StockThreshold).filter(
             StockThreshold.tenant_id == tenant_id,
             StockThreshold.product_id == product_id
@@ -27,7 +27,7 @@ class ThresholdService:
         return stock_threshold_query.first()
 
     @staticmethod
-    def update_threshold(
+    def hreshold(
         db: Session,
         tenant_id: int,
         product_id: int,

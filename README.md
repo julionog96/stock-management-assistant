@@ -8,9 +8,53 @@ A solução seria um **Assitente de Gestão de Estoque Inteligente**. O Assisten
 
 ## Como executar
 
-uvicorn app.main:app --reload
+Requisitos:
+- Python >= 3.9 instalado
 
+1. Clone o repositório:
+```
+    git clone https://github.com/julionog96/stock-management-assistant.git
+```
+
+2. No diretório do projeto clonado, crie um ambiente virtual
+```
+    python -m venv .venv
+```
+Ou
+```
+    python -m venv .venv
+```
+
+3. Ative a venv e instale as dependências
+
+Em ambiente Linux/MacOS
+```
+    source .venv/bin/activate
+```
+
+Em ambiente Windows
+```
+    .venv/bin/activate
+```
+
+Agora, para instalar as dependências
+```
+    pip install -r requirements.txt
+```
+
+4. Execute a aplicação
+```
+    uvicorn app.main:app
+```
+
+5. Execute o Job de monitoramento de estoques:
+```
+    python -m app.jobs.stock_monitor_job
+```
+
+Algumas observações:
 Por ser POC, o schema do banco é inicializado automaticamente no startup da aplicação via SQLAlchemy. Em um ambiente produtivo, essa responsabilidade seria delegada a um mecanismo de migrations.
+Além disso, o cron job esta sendo representado por um script executável que pode ser disparado manualmente. Em produção, esse job poderá ser agendado via scheduler (ex: cron, Celery Beat, Cloud Scheduler) ou substituído por uma arquitetura event-driven.
 
 ## Escopo e Limitações
 

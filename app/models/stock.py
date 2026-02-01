@@ -7,7 +7,9 @@ class Stock(Base):
 
     id = Column[int](Integer, primary_key=True)
     tenant_id = Column[int](Integer, ForeignKey("tenants.id"), nullable=False)
-    product_id = Column[int](Integer, ForeignKey("products.id"), nullable=False)
+    product_id = Column[int](
+        Integer, ForeignKey("products.id"), nullable=False
+        )
 
     quantity = Column[int](Integer, nullable=False)
 
@@ -17,6 +19,8 @@ class StockThreshold(Base):
 
     id = Column[int](Integer, primary_key=True)
     tenant_id = Column[int](Integer, ForeignKey("tenants.id"), nullable=False)
-    product_id = Column[int](Integer, ForeignKey("products.id"), nullable=False)
+    product_id = Column[int](
+        Integer, ForeignKey("products.id"), nullable=False
+        )
 
     minimum_quantity = Column[int](Integer, nullable=False)
