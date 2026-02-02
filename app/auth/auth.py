@@ -1,10 +1,17 @@
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models.tenant import Tenant
 
 
 def get_current_tenant(
+    db: Session = Depends(get_db),
     x_tenant_id: int = Header(...)
 ) -> int:
-    if not x_tenant_id:
+
+    tenant = db.query(Tenant).filter(Tenant.id == x_tenant_id).first()
+    if not tenant:
         raise HTTPException(status_code=401)
 
-    return x_tenant_id
+    return tenant.id

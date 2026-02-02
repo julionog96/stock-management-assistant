@@ -26,21 +26,21 @@ def run_stock_monitor_job():
     try:
         stocks = db.query(Stock).all()
 
+        orchestrator = AgentOrchestrator(db)
         for stock in stocks:
             minimum = forecast_minimum(stock)
-            agent = AgentOrchestrator(db)
 
             context = AgentContext(tenant_id=stock.tenant_id, payload={})
 
             # valida se o estoque está abaixo do limite mínimo
-            agent.handle_stock_below_threshold(
+            orchestrator.handle_stock_below_threshold(
                 context=context,
                 product_id=stock.product_id,
                 current_quantity=stock.quantity,
                 minimum_quantity=minimum
             )
 
-            StockService().update_threshold(
+            StockService.update_threshold(
                 db=db,
                 tenant_id=stock.tenant_id,
                 product_id=stock.product_id,

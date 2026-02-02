@@ -1,14 +1,16 @@
 from sqlalchemy.orm import Session
 from app.models.stock import Stock
 
+DEFAULT_MINIMUM_QUANTITY = 10
+
 
 class StockService:
     '''
     Classe de serviços para gerenciar o estoque
     '''
 
+    @staticmethod
     def get_stock(
-        self,
         db: Session,
         tenant_id: int,
         product_id: int
@@ -29,7 +31,8 @@ class StockService:
         db: Session,
         tenant_id: int,
         product_id: int,
-        quantity: int
+        quantity: int,
+        minimum_quantity: int | None = None
     ) -> Stock:
         stock = StockService.get_stock(db, tenant_id, product_id)
 
@@ -37,7 +40,8 @@ class StockService:
             stock = Stock(
                 tenant_id=tenant_id,
                 product_id=product_id,
-                quantity=quantity
+                quantity=quantity,
+                minimum_quantity=DEFAULT_MINIMUM_QUANTITY
             )
             db.add(stock)
         else:
@@ -47,8 +51,8 @@ class StockService:
         db.refresh(stock)
         return stock
 
+    @staticmethod
     def update_threshold(
-        self,
         db: Session,
         tenant_id: int,
         product_id: int,
@@ -61,7 +65,7 @@ class StockService:
         if not minimum_quantity:
             raise ValueError("Minimum quantity is required")
          
-        stock = self.get_stock(db, tenant_id, product_id)
+        stock = StockService.get_stock(db, tenant_id, product_id)
         if not stock:
             raise ValueError("Stock not found")
 

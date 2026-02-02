@@ -32,6 +32,9 @@ class AgentTools:
     def notify_manager(self, tenant_id: int, product_id: int, message: str):
         """
         Notifica o gerente sobre a situação do estoque.
+        No momento não há implementação de fato para a notificação,
+        a ideia seria implementar numa evolução do projeto.
+        (ex: enviar email, SMS, push, etc.)
         """
         print(
             f"Notify Tenant {tenant_id} | "

@@ -164,7 +164,7 @@ CREATE USER stock_user WITH PASSWORD 'stock_pass';
 GRANT ALL PRIVILEGES ON DATABASE stock_db TO stock_user;
 ```
 
-3. Crie um arquivo .env com a variável de ambiente
+3. Crie um arquivo .env com a variável de ambiente.
 ```
 DATABASE_URL=postgresql+psycopg2://stock_user:stock_pass@localhost:5432/stock_db
 ```
@@ -187,6 +187,7 @@ pip install -r requirements.txt
 ```
 
 5. Execute o script de preenchimento do banco de dados
+Este passo é obrigatório para ter as tabelas.
 ```
 python -m app.scripts.seed_data
 ```
@@ -202,8 +203,8 @@ python -m app.jobs.stock_monitor_job
 ```
 
 Algumas observações:
-Por ser POC, o schema do banco é inicializado automaticamente no startup da aplicação via SQLAlchemy. Em um ambiente produtivo, essa responsabilidade seria delegada a um mecanismo de migrations.
-Além disso, o cron job esta sendo representado por um script executável que pode ser disparado manualmente. Em produção, esse job poderá ser agendado via scheduler (ex: cron, Celery Beat, Cloud Scheduler) ou substituído por uma arquitetura event-driven.
+
+O cron job esta sendo representado por um script executável que pode ser disparado manualmente. Em produção, esse job poderá ser agendado via scheduler (ex: cron, Celery Beat, Cloud Scheduler) ou substituído por uma arquitetura event-driven.
 
 **Autenticação e contexto do tenant**
 Para fins de POC, a autenticação foi mantida propositalmente simples, utilizando headers para a identificação do tenant. O objetivo é demonstrar como o contexto de um tenant é resolvido e propagado ao longo de toda a aplicação. Esse mecanismo vai garantir que todos os fluxos da aplicação sejam tenant-aware. 

@@ -4,7 +4,6 @@ from app.models.stock import Stock
 
 from app.agent.context import AgentContext
 from app.agent.decisions import AgentDecision, llm_decision
-from app.services.threshold_service import ThresholdService
 
 from app.agent.tools import AgentTools
 
@@ -33,18 +32,11 @@ class AgentOrchestrator:
 
         lines = []
         for stock in stocks:
-            threshold = ThresholdService.get_threshold(
-                db=self.db,
-                tenant_id=context.tenant_id,
-                product_id=stock.product_id
-            )
-
-            minimum = threshold.minimum_quantity if threshold else "N/A"
 
             lines.append(
                 f"Produto {stock.product_id}: "
                 f"{stock.quantity} unidades "
-                f"(mínimo: {minimum})"
+                f"(mínimo: {stock.minimum_quantity})"
             )
 
         return "\n".join(lines)

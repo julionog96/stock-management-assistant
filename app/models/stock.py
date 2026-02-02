@@ -5,11 +5,11 @@ from app.database import Base
 class Stock(Base):
     __tablename__ = "stocks"
 
-    id = Column[int](Integer, primary_key=True)
-    tenant_id = Column[int](Integer, ForeignKey("tenants.id"), nullable=False)
-    product_id = Column[int](
+    id = Column(Integer, primary_key=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    product_id = Column(
         Integer, ForeignKey("products.id"), nullable=False
         )
 
-    quantity = Column[int](Integer, nullable=False)
-    minimum_quantity = Column[int](Integer, nullable=False)
+    quantity = Column(Integer, nullable=False)
+    minimum_quantity = Column(Integer, default=10, nullable=False)
