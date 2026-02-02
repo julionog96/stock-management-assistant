@@ -1,7 +1,7 @@
 from app.database import SessionLocal, Base, engine
 from app.models.tenant import Tenant
 from app.models.product import Product
-from app.models.stock import Stock, StockThreshold
+from app.models.stock import Stock
 
 '''
 Script para criar dados de teste no banco de dados.
@@ -29,19 +29,12 @@ def seed():
         db.commit()
 
         stocks = [
-            Stock(tenant_id=tenant1.id, product_id=product1.id, quantity=10),
-            Stock(tenant_id=tenant1.id, product_id=product2.id, quantity=3),
-            Stock(tenant_id=tenant2.id, product_id=product1.id, quantity=20),
+            Stock(tenant_id=tenant1.id, product_id=product1.id, quantity=10, minimum_quantity=5),
+            Stock(tenant_id=tenant1.id, product_id=product2.id, quantity=3, minimum_quantity=6),
+            Stock(tenant_id=tenant2.id, product_id=product1.id, quantity=20, minimum_quantity=10),
         ]
 
         db.add_all(stocks)
-
-        thresholds = [
-            StockThreshold(tenant_id=tenant1.id, product_id=product1.id, minimum_quantity=5),
-            StockThreshold(tenant_id=tenant1.id, product_id=product2.id, minimum_quantity=6),
-        ]
-
-        db.add_all(thresholds)
         db.commit()
 
         print("Seed data created")

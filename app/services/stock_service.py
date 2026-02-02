@@ -7,8 +7,8 @@ class StockService:
     Classe de serviços para gerenciar o estoque
     '''
 
-    @staticmethod
     def get_stock(
+        self,
         db: Session,
         tenant_id: int,
         product_id: int
@@ -43,6 +43,29 @@ class StockService:
         else:
             stock.quantity = quantity
 
+        db.commit()
+        db.refresh(stock)
+        return stock
+
+    def update_threshold(
+        self,
+        db: Session,
+        tenant_id: int,
+        product_id: int,
+        minimum_quantity: int
+    ) -> Stock:
+        if not tenant_id:
+            raise ValueError("Tenant ID is required")
+        if not product_id:
+            raise ValueError("Product ID is required")
+        if not minimum_quantity:
+            raise ValueError("Minimum quantity is required")
+         
+        stock = self.get_stock(db, tenant_id, product_id)
+        if not stock:
+            raise ValueError("Stock not found")
+
+        stock.minimum_quantity = minimum_quantity
         db.commit()
         db.refresh(stock)
         return stock

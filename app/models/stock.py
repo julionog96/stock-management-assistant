@@ -12,15 +12,4 @@ class Stock(Base):
         )
 
     quantity = Column[int](Integer, nullable=False)
-
-
-class StockThreshold(Base):
-    __tablename__ = "stock_thresholds"
-
-    id = Column[int](Integer, primary_key=True)
-    tenant_id = Column[int](Integer, ForeignKey("tenants.id"), nullable=False)
-    product_id = Column[int](
-        Integer, ForeignKey("products.id"), nullable=False
-        )
-
     minimum_quantity = Column[int](Integer, nullable=False)
