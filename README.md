@@ -269,3 +269,22 @@ Na POC, o comportamento da LLM é simulado, mantendo o foco na arquitetura e orq
 
 O Orquestrador de Agentes foi desenhado de forma a permitir a adoção futura do Model Context Protocol (MCP), que padroniza a troca de contexto, ferramentas e mensagens entre modelos de linguagem e aplicações.
 Embora o MCP não esteja implementado nesta POC, a separação clara de contexto, ferramentas e decisões permite que o agente seja facilmente adaptado para um ambiente compatível com esse protocolo.
+
+## Troubleshooting
+
+### Permissão ao executar Docker no Linux / WSL
+
+Em alguns ambientes Linux ou WSL, pode ocorrer o erro de permissão ao tentar executar comandos docker. Exemplo de erro:
+
+```
+permission denied while trying to connect to the Docker daemon socket
+```
+
+Neste caso, duas soluções comuns seriam:
+
+- Executar o comando com sudo:
+  sudo docker compose up --build
+
+- Ou adicionar o usuário ao grupo docker (requer logout/login):
+  sudo usermod -aG docker $USER
+
