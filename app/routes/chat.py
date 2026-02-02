@@ -5,7 +5,7 @@ from app.database import get_db
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.agent.context import AgentContext
 from app.agent.orchestrator import AgentOrchestrator
-from app.auth import get_current_tenant
+from app.auth.auth import get_current_tenant
 
 router = APIRouter(prefix="/chat")
 

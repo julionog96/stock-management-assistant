@@ -4,28 +4,54 @@
 
 A proposta é desenvolver uma POC (Prova de Conceito) que demonstre a capacidade de projetar uma arquitetura com IA Agêntica e Multi-tenancy em um ambiente SaaS.
 
-A solução seria um **Assitente de Gestão de Estoque Inteligente**. O Assistente deve permitir que o usuário consulte o estoque da loja de forma conversativa e também, disparar ações de reabastecimento quando o estoque estiver abaixo do mínimo.
+A solução é um **Assitente de Gestão de Estoque Inteligente**. O Assistente deve permitir que o usuário consulte o estoque da loja de forma conversativa e também, disparar ações de reabastecimento quando o estoque estiver abaixo do mínimo.
 
 ## Como executar
 
 Requisitos:
 - Python >= 3.9 instalado
+- Docker
+- Postgres >= 14 (opcional se for executar sem docker)
+
+A forma recomendada de executar é através do Docker compose, pois é mais fácil, prática e já garante a inicialização automática do banco de dados e alimenta as tabelas com um conteúdo pré-definido para testes. 
 
 1. Clone o repositório:
 ```
     git clone https://github.com/julionog96/stock-management-assistant.git
 ```
 
-2. No diretório do projeto clonado, crie um ambiente virtual
+2. Execute o docker compose
+```
+    docker compose up --build
+```
+
+Opcional - Executar sem docker:
+
+Caso deseje executar de forma manual pode ser seguido o passo a passo abaixo. Este modo requer um banco PostgreSQL rodando localmente.
+
+1. No diretório do projeto clonado, crie um ambiente virtual
 ```
     python -m venv .venv
 ```
 Ou
 ```
-    python -m venv .venv
+    python3 -m venv .venv
 ```
 
-3. Ative a venv e instale as dependências
+2. Agora, é necessário criar o banco manualmente.
+Exemplo usando psql:
+```
+    CREATE DATABASE stock_db;
+    CREATE USER stock_user WITH PASSWORD 'stock_pass';
+    GRANT ALL PRIVILEGES ON DATABASE stock_db TO stock_user;
+```
+
+3. Crie um arquivo .env com a variável de ambiente
+```
+    DATABASE_URL=postgresql+psycopg2://stock_user:stock_pass@localhost:5432/stock_db
+```
+
+4. Ative a venv e instale as dependências
 
 Em ambiente Linux/MacOS
 ```
@@ -42,12 +68,19 @@ Agora, para instalar as dependências
     pip install -r requirements.txt
 ```
 
-4. Execute a aplicação
+
+
+5. Execute o script de preenchimento do banco de dados
+```
+    python -m app.scripts.seed_data
+```
+
+6. Execute a aplicação
 ```
     uvicorn app.main:app
 ```
 
-5. Execute o Job de monitoramento de estoques:
+7. Execute o Job de monitoramento de estoques:
 ```
     python -m app.jobs.stock_monitor_job
 ```
@@ -98,7 +131,7 @@ Resumindo o fluxo:
 
 - Agente gera a resposta ao usuário
 
-![Fluxo conversacional](./stock-conversational-flow.png)
+![Fluxo conversacional](./docs/stock-conversational-flow.png)
 
 **Fluxo proativo (batch / schedule)**
 
@@ -129,7 +162,7 @@ Resumindo o fluxo:
 
 - Por fim, a API executa a ação indicada pelo agente.
 
-![Fluxo proativo](./stock-proactive-flow.png)
+![Fluxo proativo](./docs/stock-proactive-flow.png)
 
 
 É importante que o intervalo não seja curto demais de modo a não sobrecarregar os componentes do sistema. Considerando que, caso a POC futuramente se torne um SaaS em ambiente produtivo, terão diversos agentes acessando simultaneamente o banco de dados para recolher essas informações. Um intervalo curto demais poderia sobrecarregar o banco, assim gerando gargalos ou exigindo uma quantidade excessiva de instâncias a serem escaladas.
@@ -158,7 +191,7 @@ Uma opção viável na lógica da aplicação seria utilizar uma arquitetura ori
 
  ### System Design
 
- ![System Design](./System-Design.png)
+ ![System Design](./docs/system-design.png)
 
 **Usuário / Gerente de Loja:**
 Acessa o sistema via interface web ou chat para visualizar estoques, receber alertas e tomar decisões sobre reabastecimento.

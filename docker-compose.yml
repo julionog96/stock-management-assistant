@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: stock_db
+    environment:
+      POSTGRES_DB: stock_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    container_name: stock_api
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/stock_db
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    entrypoint: ["/app/entrypoint.sh"]
+
+volumes:
+  postgres_data:
