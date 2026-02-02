@@ -16,6 +16,9 @@ def chat(
     tenant_id: int = Depends(get_current_tenant),
     db: Session = Depends(get_db)
 ):
+    '''
+    Endpoint para conversar com o agente de IA. (simulado por enquanto)
+    '''
     context = AgentContext(
         tenant_id=tenant_id,
         payload={}

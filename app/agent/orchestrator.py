@@ -34,7 +34,7 @@ class AgentOrchestrator:
         for stock in stocks:
 
             lines.append(
-                f"Produto {stock.product_id}: "
+                f"{stock.product}: "
                 f"{stock.quantity} unidades "
                 f"(mínimo: {stock.minimum_quantity})"
             )

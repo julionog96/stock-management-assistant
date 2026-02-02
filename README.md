@@ -6,10 +6,124 @@ A proposta é desenvolver uma POC (Prova de Conceito) que demonstre a capacidade
 
 A solução é um **Assitente de Gestão de Estoque Inteligente**. O Assistente deve permitir que o usuário consulte o estoque da loja de forma conversativa e também, disparar ações de reabastecimento quando o estoque estiver abaixo do mínimo.
 
-
 ## Escopo e Limitações
 
 Esta POC foca em demonstrar arquitetura, orquestração e multi-tenancy, não cobrindo aspectos como observabilidade, segurança avançada e escalabilidade em larga escala. Também não foi aplicada toda a complexidade relacionada aos modelos de LLM pois o foco foi maior na arquitetura.
+
+## Como executar
+
+Requisitos:
+- Python >= 3.9 instalado
+- Docker
+- Postgres >= 14 (opcional se for executar sem docker)
+
+A forma recomendada de executar é através do Docker compose, pois é mais fácil, prática e já garante a inicialização automática do banco de dados e alimenta as tabelas com um conteúdo pré-definido para testes. 
+
+1. Clone o repositório:
+```
+    git clone https://github.com/julionog96/stock-management-assistant.git
+```
+
+2. Execute o docker compose
+```
+    docker compose up --build
+```
+
+Opcional - Executar sem docker:
+
+Caso deseje executar de forma manual pode ser seguido o passo a passo abaixo. Este modo requer um banco PostgreSQL rodando localmente.
+
+1. No diretório do projeto clonado, crie um ambiente virtual
+```
+python -m venv .venv
+```
+Ou
+```
+python3 -m venv .venv
+```
+
+2. Agora, é necessário criar o banco manualmente.
+Exemplo usando psql:
+```
+CREATE DATABASE stock_db;
+CREATE USER stock_user WITH PASSWORD 'stock_pass';
+GRANT ALL PRIVILEGES ON DATABASE stock_db TO stock_user;
+```
+
+3. Crie um arquivo .env com a variável de ambiente.
+```
+DATABASE_URL=postgresql+psycopg2://stock_user:stock_pass@localhost:5432/stock_db
+```
+
+4. Ative a venv e instale as dependências
+
+Em ambiente Linux/MacOS
+```
+source .venv/bin/activate
+```
+
+Em ambiente Windows
+```
+.venv/bin/activate
+```
+
+Agora, para instalar as dependências
+```
+pip install -r requirements.txt
+```
+
+5. Execute o script de preenchimento do banco de dados
+Este passo é obrigatório para ter as tabelas.
+```
+python -m app.scripts.seed_data
+```
+
+6. Execute a aplicação
+```
+uvicorn app.main:app
+```
+
+7. Para testes, pode ser executado o Job de monitoramento de estoques:
+```
+python -m app.jobs.stock_monitor_job
+```
+
+Algumas observações:
+
+O cron job esta sendo representado por um script executável que pode ser disparado manualmente. Em produção, esse job poderá ser agendado via scheduler (ex: cron, Celery Beat, Cloud Scheduler) ou substituído por uma arquitetura event-driven.
+
+**Autenticação e contexto do tenant**
+Para fins de POC, a autenticação foi mantida propositalmente simples, utilizando headers para a identificação do tenant. O objetivo é demonstrar como o contexto de um tenant é resolvido e propagado ao longo de toda a aplicação. Esse mecanismo vai garantir que todos os fluxos da aplicação sejam tenant-aware. 
+Em ambiente produtivo, poderia ser substituído por algo mais robusto como JWT, OAuth etc..
+
+## Como testar a aplicação.
+
+Após executar a aplicação, existem algumas formas de explorar e testar as funcionalidades.
+
+### Documentação da API (Swagger)
+
+Com a api executando localmente, acesse a URL:
+
+http://localhost:8000/docs
+
+Através do swagger é possível:
+- Testar o endpoint de health check
+- Interagir com o fluxo conversacional (chat)
+- Consultar informações de estoque por tenant
+- Disparar manualmente o job de monitoramento de estoque (caso aplicável)
+
+No momento, a autenticação está sendo simulada via headers. Para testar endpoints que estejam protegidos, utilize o Header: X-Tenant-Id: <id_do_tenant>
+
+### Painel de admin
+
+A aplicação também disponibiliza um painel de administrador:
+
+http://localhost:8000/admin
+
+O painel permite visualizar os objetos criados (tenants, produtos, estoques), além de ser possível inserir e alterar os dados manualmente. Pode ser útil para facilitar testes no sistema.
+
+Observação: No momento, o painel encontra-se sem autenticação nesta POC. Como o único objetivo do painel por enquanto é facilitar a exploração e validação das funcionalidades, não foi priorizada uma autenticação.
+Em um ambiente produtivo, este painel deve ser protegido por mecanismos de autenticação e autorização adequados.
 
 ## Arquitetura
 
@@ -112,6 +226,7 @@ O **fluxo conversativo** será usado para consulta de informações a respeito d
 Antes de entrar nos detalhes do fluxo proativo, precisamos entender o contexto da aplicação. Se considerarmos um sistema de larga escala, com milhares de tenants e necessidade de atualizações em tempo real, faz sentido utilizarmos uma arquitetura orientada a eventos para lidar com o caso, e vamos destrinchar um pouco essa projeção de um SaaS rodando em produção no mercado, com vários clientes, mais ao final deste documento. Por enquanto, por se tratar de uma POC, trabalhar com event-driven architecture poderia ser utilizar algo grande demais para uma proposta simples, portanto, a POC poderá utilizar cron jobs para processos mais simples, conforme será explicado.
 
 O **fluxo proativo** será utilizado para reabastecimento dos estoques. A ideia é um sistema integrado com um agente, esse sistema, na POC, terá um cron job configurado para consultar a base de dados e verificar a quantidade de produtos em estoque. Ao recuperar essa informação, caso os estoques estejam abaixo do limite definido, ele irá consultar o agente, passando a situação atual e também as ferramentas (funções) da api que podem ser utilizadas de acordo com cada decisão da LLM, em um processo de tool calling. A api recebe a resposta com a definição de qual função deve ser executada e como será executada.
+
 Por outro lado, é importante definir como esse limite, esse threshold, será computado. Utilizaremos uma ferramenta de previsão de séries temporais para definir esse threshold, por tenant, por estoque, por produto etc.. dependendo das regras de negócio que serão aplicadas. Para isso, utilizaremos este mesmo Cron Job - que roda em um intervalo de minutos ou horas - para alimentar a ferramenta que fará a previsão das séries temporais com os dados atuais do banco. Essa ferramenta calcula valores mais assertivos de limite mínimo de estoque baseado em dados e estatísticas. Se o valor que consta no estoque já for abaixo do valor mínimo, imediatamente esse serviço vai se comunicar com o agente de IA que irá decidir o que fazer.
 
 
@@ -119,96 +234,11 @@ Por outro lado, é importante definir como esse limite, esse threshold, será co
 
 
 É importante que o intervalo não seja curto demais de modo a não sobrecarregar os componentes do sistema. Considerando que, caso a POC futuramente se torne um SaaS em ambiente produtivo, terão diversos agentes acessando simultaneamente o banco de dados para recolher essas informações. Um intervalo curto demais poderia sobrecarregar o banco, assim gerando gargalos ou exigindo uma quantidade excessiva de instâncias a serem escaladas.
+
 Outro fator é o custo da LLM. LLMs free trial tem um limite de uso e as pagas podem acabar cobrando um valor alto caso haja uma quantidade excessiva de requisições em um curto período. 
 
 Uma opção viável na lógica da aplicação seria utilizar uma arquitetura orientada a eventos. Na arquitetura orientada a eventos, os componentes se comunicam de forma mais desacoplada, através de tópicos e filas onde mensagens são "postadas" e aguardam até serem consumidas por algum outro componente. Essa abordagem é interessante e faz bastante sentido se pensarmos em um SaaS em produção, onde é importante escalar quando necessário e persistir mensagens ainda que algum componente falhe. A questão é que em uma POC talvez uma api com um Cron Job mais simples já fosse suficiente. Um sistema mais event-driven, talvez com Change Data Capture, onde haja um stream de eventos que seja processada por workers, pode ser uma boa abordagem em um mundo onde o SaaS já estivesse no mercado e sendo amplamente utilizado.
 
-
-## Como executar
-
-Requisitos:
-- Python >= 3.9 instalado
-- Docker
-- Postgres >= 14 (opcional se for executar sem docker)
-
-A forma recomendada de executar é através do Docker compose, pois é mais fácil, prática e já garante a inicialização automática do banco de dados e alimenta as tabelas com um conteúdo pré-definido para testes. 
-
-1. Clone o repositório:
-```
-    git clone https://github.com/julionog96/stock-management-assistant.git
-```
-
-2. Execute o docker compose
-```
-    docker compose up --build
-```
-
-Opcional - Executar sem docker:
-
-Caso deseje executar de forma manual pode ser seguido o passo a passo abaixo. Este modo requer um banco PostgreSQL rodando localmente.
-
-1. No diretório do projeto clonado, crie um ambiente virtual
-```
-python -m venv .venv
-```
-Ou
-```
-python3 -m venv .venv
-```
-
-2. Agora, é necessário criar o banco manualmente.
-Exemplo usando psql:
-```
-CREATE DATABASE stock_db;
-CREATE USER stock_user WITH PASSWORD 'stock_pass';
-GRANT ALL PRIVILEGES ON DATABASE stock_db TO stock_user;
-```
-
-3. Crie um arquivo .env com a variável de ambiente.
-```
-DATABASE_URL=postgresql+psycopg2://stock_user:stock_pass@localhost:5432/stock_db
-```
-
-4. Ative a venv e instale as dependências
-
-Em ambiente Linux/MacOS
-```
-source .venv/bin/activate
-```
-
-Em ambiente Windows
-```
-.venv/bin/activate
-```
-
-Agora, para instalar as dependências
-```
-pip install -r requirements.txt
-```
-
-5. Execute o script de preenchimento do banco de dados
-Este passo é obrigatório para ter as tabelas.
-```
-python -m app.scripts.seed_data
-```
-
-6. Execute a aplicação
-```
-uvicorn app.main:app
-```
-
-7. Execute o Job de monitoramento de estoques:
-```
-python -m app.jobs.stock_monitor_job
-```
-
-Algumas observações:
-
-O cron job esta sendo representado por um script executável que pode ser disparado manualmente. Em produção, esse job poderá ser agendado via scheduler (ex: cron, Celery Beat, Cloud Scheduler) ou substituído por uma arquitetura event-driven.
-
-**Autenticação e contexto do tenant**
-Para fins de POC, a autenticação foi mantida propositalmente simples, utilizando headers para a identificação do tenant. O objetivo é demonstrar como o contexto de um tenant é resolvido e propagado ao longo de toda a aplicação. Esse mecanismo vai garantir que todos os fluxos da aplicação sejam tenant-aware. 
-Em ambiente produtivo, poderia ser substituído por algo mais robusto como JWT, OAuth etc..
 
 ## Protocolos de Comunicação
 
@@ -232,6 +262,7 @@ Para a POC, a ideia foi fazer uma comunicação direta em memória, evitando com
 
 A comunicação com o agente de IA segue o padrão de tool calling, onde o agente recebe um contexto estruturado contendo informações do tenant, estado do sistema e um conjunto explícito de ferramentas disponíveis.
 Importante destacar que o agente não executa lógica de negócio diretamente, ele retorna uma decisão estruturada indicando qual ferramenta deve ser utilizada e com quais parâmetros. A execução efetiva dessas ações permanece sob responsabilidade da API.
+
 Na POC, o comportamento da LLM é simulado, mantendo o foco na arquitetura e orquestração do fluxo decisório. Uma evolução natural passaria por avaliar dentre as LLMs de mercado qual se adequaria melhor ao contexto da operação que o sistema engloba, assim como questões de custo, entre outros.
 
 ### Evolução para MCP (conceitual)
