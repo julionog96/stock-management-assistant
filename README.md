@@ -2,289 +2,277 @@
 
 ## Overview
 
-A proposta é desenvolver uma POC (Prova de Conceito) que demonstre a capacidade de projetar uma arquitetura com IA Agêntica e Multi-tenancy em um ambiente SaaS.
+The goal is to develop a POC (Proof of Concept) that demonstrates the ability to design an architecture with Agentic AI and Multi-tenancy in a SaaS environment.
 
-A solução é um **Assitente de Gestão de Estoque Inteligente**. O Assistente deve permitir que o usuário consulte o estoque da loja de forma conversativa e também, disparar ações de reabastecimento quando o estoque estiver abaixo do mínimo.
+The solution is an **Intelligent Stock Management Assistant**. The Assistant should allow users to query the store's inventory in a conversational manner and also trigger restocking actions when inventory falls below minimum levels.
 
-## Escopo e Limitações
+## Scope and Limitations
 
-Esta POC foca em demonstrar arquitetura, orquestração e multi-tenancy, não cobrindo aspectos como observabilidade, segurança avançada e escalabilidade em larga escala. Também não foi aplicada toda a complexidade relacionada aos modelos de LLM pois o foco foi maior na arquitetura.
+This POC focuses on demonstrating architecture, orchestration, and multi-tenancy, without covering aspects such as observability, advanced security, and large-scale scalability. The full complexity related to LLM models was also not applied, as the focus was primarily on architecture.
 
-## Como executar
+## How to Run
 
-Requisitos:
-- Python >= 3.9 instalado
+Requirements:
+- Python >= 3.9 installed
 - Docker
-- Postgres >= 14 (opcional se for executar sem docker)
+- Postgres >= 14 (optional if running without Docker)
 
-A forma recomendada de executar é através do Docker compose, pois é mais fácil, prática e já garante a inicialização automática do banco de dados e alimenta as tabelas com um conteúdo pré-definido para testes. 
+The recommended way to run is through Docker Compose, as it is easier, more practical, and already ensures automatic database initialization and populates tables with predefined content for testing.
 
-1. Clone o repositório:
+1. Clone the repository:
 ```
     git clone https://github.com/julionog96/stock-management-assistant.git
 ```
 
-2. Execute o docker compose
+2. Run Docker Compose:
 ```
     docker compose up --build
 ```
 
-Opcional - Executar sem docker:
+Optional - Running without Docker:
 
-Caso deseje executar de forma manual pode ser seguido o passo a passo abaixo. Este modo requer um banco PostgreSQL rodando localmente.
+If you wish to run manually, you can follow the step-by-step instructions below. This mode requires a PostgreSQL database running locally.
 
-1. No diretório do projeto clonado, crie um ambiente virtual
+1. In the cloned project directory, create a virtual environment:
 ```
 python -m venv .venv
 ```
-Ou
+Or
 ```
 python3 -m venv .venv
 ```
 
-2. Agora, é necessário criar o banco manualmente.
-Exemplo usando psql:
+2. Now, you need to create the database manually.
+Example using psql:
 ```
 CREATE DATABASE stock_db;
 CREATE USER stock_user WITH PASSWORD 'stock_pass';
 GRANT ALL PRIVILEGES ON DATABASE stock_db TO stock_user;
 ```
 
-3. Crie um arquivo .env com a variável de ambiente.
+3. Create a .env file with the environment variable:
 ```
 DATABASE_URL=postgresql+psycopg2://stock_user:stock_pass@localhost:5432/stock_db
 ```
 
-4. Ative a venv e instale as dependências
+4. Activate the venv and install dependencies
 
-Em ambiente Linux/MacOS
+On Linux/MacOS:
 ```
 source .venv/bin/activate
 ```
 
-Em ambiente Windows
+On Windows:
 ```
 .venv/bin/activate
 ```
 
-Agora, para instalar as dependências
+Now, to install dependencies:
 ```
 pip install -r requirements.txt
 ```
 
-5. Execute o script de preenchimento do banco de dados
-Este passo é obrigatório para ter as tabelas.
+5. Run the database seeding script
+This step is mandatory to have the tables.
 ```
 python -m app.scripts.seed_data
 ```
 
-6. Execute a aplicação
+6. Run the application:
 ```
 uvicorn app.main:app
 ```
 
-7. Para testes, pode ser executado o Job de monitoramento de estoques:
+7. For testing purposes, you can run the stock monitoring job:
 ```
 python -m app.jobs.stock_monitor_job
 ```
 
-Algumas observações:
+Some notes:
 
-O cron job esta sendo representado por um script executável que pode ser disparado manualmente. Em produção, esse job poderá ser agendado via scheduler (ex: cron, Celery Beat, Cloud Scheduler) ou substituído por uma arquitetura event-driven.
+The scheduled job is being represented by an executable script that can be triggered manually. In production, this job could be scheduled via a scheduler (e.g., cron, Celery Beat, Cloud Scheduler) or replaced by an event-driven architecture.
 
-**Autenticação e contexto do tenant**
-Para fins de POC, a autenticação foi mantida propositalmente simples, utilizando headers para a identificação do tenant. O objetivo é demonstrar como o contexto de um tenant é resolvido e propagado ao longo de toda a aplicação. Esse mecanismo vai garantir que todos os fluxos da aplicação sejam tenant-aware. 
-Em ambiente produtivo, poderia ser substituído por algo mais robusto como JWT, OAuth etc..
+**Authentication and tenant context**
+For POC purposes, authentication was kept intentionally simple, using headers for tenant identification. The goal is to demonstrate how a tenant's context is resolved and propagated throughout the entire application. This mechanism ensures that all application flows are tenant-aware.
+In a production environment, this could be replaced with something more robust like JWT, OAuth, etc.
 
-## Como testar a aplicação.
+## How to Test the Application
 
-Após executar a aplicação, existem algumas formas de explorar e testar as funcionalidades.
+After running the application, there are several ways to explore and test the features.
 
-### Documentação da API (Swagger)
+### API Documentation (Swagger)
 
-Com a api executando localmente, acesse a URL:
+With the API running locally, access the URL:
 
 http://localhost:8000/docs
 
-Através do swagger é possível:
-- Testar o endpoint de health check
-- Interagir com o fluxo conversacional (chat)
-- Consultar informações de estoque por tenant
-- Disparar manualmente o job de monitoramento de estoque (caso aplicável)
+Through Swagger, you can:
+- Test the health check endpoint
+- Interact with the conversational flow (chat)
+- Query inventory information by tenant
+- Manually trigger the stock monitoring job (if applicable)
 
-No momento, a autenticação está sendo simulada via headers. Para testar endpoints que estejam protegidos, utilize o Header: X-Tenant-Id: <id_do_tenant>
+Currently, authentication is being simulated via headers. To test protected endpoints, use the Header: X-Tenant-Id: <tenant_id>
 
-### Painel de admin
+### Admin Panel
 
-A aplicação também disponibiliza um painel de administrador:
+The application also provides an admin panel:
 
 http://localhost:8000/admin
 
-O painel permite visualizar os objetos criados (tenants, produtos, estoques), além de ser possível inserir e alterar os dados manualmente. Pode ser útil para facilitar testes no sistema.
+The panel allows you to view created objects (tenants, products, stocks), and you can also insert and modify data manually. It can be useful to facilitate system testing.
 
-Observação: No momento, o painel encontra-se sem autenticação nesta POC. Como o único objetivo do painel por enquanto é facilitar a exploração e validação das funcionalidades, não foi priorizada uma autenticação.
-Em um ambiente produtivo, este painel deve ser protegido por mecanismos de autenticação e autorização adequados.
+Note: Currently, the panel is without authentication in this POC. Since the only purpose of the panel for now is to facilitate exploration and validation of features, authentication was not prioritized.
+In a production environment, this panel must be protected by appropriate authentication and authorization mechanisms.
 
-## Arquitetura
+## Architecture
 
-### Requisitos Funcionais
+### Functional Requirements
 
- - O usuário deverá consultar o estoque da loja a partir de uma interface, como se fosse um chatbot.
- - O sistema deve automaticamente disparar ações de reabastecimento quando o estoque estiver abaixo do mínimo.
- - O usuário pode definir qual é o estoque mínimo.
- - O Agente pode agir de forma proativa como também receber inputs do usuário.
- - O sistema será multi-tenant. Cada gerente de loja será um tenant.
- - Os tenants terão acesso ao mesmo banco de dados, havendo uma separação lógica das informações por tenant.
- - Os tenants terão acesso à interface pelo mesmo domínio (endereço). A interface saberá quem é o tenant através da autenticação e contexto.
+- Users should be able to query the store's inventory through an interface, like a chatbot.
+- The system must automatically trigger restocking actions when inventory falls below minimum levels.
+- Users can define what the minimum inventory level is.
+- The Agent can act proactively as well as receive user inputs.
+- The system will be multi-tenant. Each store manager will be a tenant.
+- Tenants will have access to the same database, with logical separation of information by tenant.
+- Tenants will access the interface through the same domain (address). The interface will know which tenant it is through authentication and context.
 
-### Requisitos Não-Funcionais
+### Architecture Components
 
- - Isolamento de dados entre tenants.
- - Baixo acoplamento entre agentes e regras de negócio.
- - Custos controlados de uso de LLM.
-
- ### System Design
-
- ![System Design](./docs/system-design.png)
-
-**Usuário / Gerente de Loja:**
-Acessa o sistema via interface web ou chat para visualizar estoques, receber alertas e tomar decisões sobre reabastecimento.
-
-**Interface Web / Chat:**
-Interface amigável que permite interação com o sistema através de chat conversacional ou dashboard visual.
+**Web Interface / Chat:**
+User-friendly interface that allows interaction with the system through conversational chat or visual dashboard.
 
 **API Gateway:**
-Ponto de entrada único que gerencia autenticação, rate limiting e roteamento de requisições.
+Single entry point that manages authentication, rate limiting, and request routing.
 
 **Backend API (FastAPI):**
-API principal desenvolvida em FastAPI que orquestra todas as operações do sistema, desde autenticação até processamento de regras de negócio.
+Main API developed in FastAPI that orchestrates all system operations, from authentication to business rule processing.
 
 **Agent Orchestrator:**
-Responsável por coordenar a comunicação com a LLM e gerenciar o contexto das conversas e decisões.
+Responsible for coordinating communication with the LLM and managing conversation and decision context.
 
 **Tool Calling Layer (LLM):**
-Camada que integra com alguma LLM (Claude/GPT) usando tool calling para que a IA decida autonomamente quais ações tomar quando o estoque está baixo. Observação: no código da POC a tomada de decisão da LLM é simulada, mantendo o foco na arquitetura e orquestração.
+Layer that integrates with an LLM (Claude/GPT) using tool calling so the AI autonomously decides which actions to take when inventory is low. Note: in the POC code, the LLM's decision-making is simulated, keeping the focus on architecture and orchestration.
 
 **Tool: Check Stock:**
-Ferramenta que verifica o status atual do estoque em tempo real e retorna informações detalhadas.
+Tool that checks the current inventory status in real-time and returns detailed information.
 
 **Tool: Refill Stock:**
-Ferramenta que automaticamente cria ordem de compra com fornecedores quando necessário reabastecer.
+Tool that automatically creates purchase orders with suppliers when restocking is needed.
 
 **Tool: Notify Manager:**
-Ferramenta que envia notificações (email, SMS, push) para o gerente quando requer atenção humana.
+Tool that sends notifications (email, SMS, push) to the manager when human attention is required.
 
-**Cron Job Scheduler:**
-Executa tarefas agendadas periodicamente, como recálculo de thresholds dinâmicos e verificação de estoques.
+**Scheduled Job Scheduler:**
+Executes scheduled tasks periodically, such as recalculating dynamic thresholds and checking inventory levels.
 
 **Stock Monitoring Service:**
-Serviço que monitora continuamente os níveis de estoque e compara com os thresholds dinâmicos calculados.
+Service that continuously monitors inventory levels and compares them with calculated dynamic thresholds.
 
 **Forecast Engine:**
-Motor de previsão que usa modelos estatísticos (Prophet, ARIMA) para calcular thresholds dinâmicos baseados em sazonalidade e tendências.
+Forecasting engine that uses statistical models (Prophet, ARIMA) to calculate dynamic thresholds based on seasonality and trends.
 
-**Banco de Dados Relacional:**
-Armazena dados de produtos, estoques, histórico de vendas, thresholds dinâmicos e informações dos tenants.
-
-
-## Decisões de Design
-
-### Cálculo dinâmico de thresholds
-
-O assistente precisa funcionar em dois fluxos:
-- Usuário pode solicitar ao agente informações sobre o estoque, e assim sendo o agente coletará informações recentes para responder o usuário (fluxo conversacional)
-- O agente precisa saber quando os estoques estão baixos e tomar uma ação a partir disso (fluxo proativo)
-
-Neste último ponto, algumas considerações: 
-- o estoque terá um limite mínimo que não necessariamente é fixo.
-- o limite pode variar de acordo com o tenant, com o tipo de produto, com a localização do estoque específico, dentre outras variáveis
-- poderíamos programar uma interface em que o usuário define os limites do estoque dele, entretanto estaríamos desperdiçando a oportunidade de usar a IA e os dados coletados a nosso favor. Não faz sentido ter algo tão manual quando podemos otimizar e deixar com que o usuário final não se preocupe com certos indicadores.
-
-Portanto, seria interessante utilizar ferramentas de inteligência artificial ou machine learning para saber qual sería esse limite mínimo, esse threshold. Teremos alguns elementos no nosso sistema que podem ajudar nesse controle:
-
-1 - O limite será um dado persistido no banco de dados. 
-
-2 - O limite será preferencialmente mudado pelo próprio sistema de forma inteligente, com a ajuda de predições.
-
-3 - Será utilizada uma ferramenta de previsão de séries temporais (ex: Prophet, statsmodels...), para atualizar os limites mínimos de forma dinâmica.
-
-A razão de escolher uma ferramenta que não a própria LLM para fazer essa predição é que seria muito custoso utilizar a LLM a cada vez que um evento fosse disparado devido a uma alteração no estoque, portanto a ferramenta de previsão de séries "protege" o agente de ser chamada toda vez, o objetivo é que o agente só seja requisitado nesse caso quando os estoques estiverem baixos, para tomada de decisão.
-
-**Resumo:**
-    Agente -> Tomada de decisão
-    Previsão de séries temporais -> Cálculos relacionados ao negócio
-
-### Fluxo conversativo (on-demand)
-
-O **fluxo conversativo** será usado para consulta de informações a respeito do estoque. A ideia é que os gerentes da loja tenham uma interface para consultar informações de seus estoques de forma simples e intuitiva. Ao fazer uma pergunta ao chatbot, o agente poderá consultar informações obtidas a partir de uma camada de recuperação de dados (RAG) - aqui apresentado apenas de forma conceitual - composta por informações persistidas ou coletadas sob demanda. Se a informação dos estoques daquele tenant forem antigas, o agente fará uma consulta ativa ao serviço para recolher os novos dados.
+**Relational Database:**
+Stores product data, inventories, sales history, dynamic thresholds, and tenant information.
 
 
-![Fluxo conversacional](./docs/stock-conversational-flow.png)
+## Design Decisions
 
-### Fluxo proativo (batch / schedule)
+### Dynamic Threshold Calculation
 
-Antes de entrar nos detalhes do fluxo proativo, precisamos entender o contexto da aplicação. Se considerarmos um sistema de larga escala, com milhares de tenants e necessidade de atualizações em tempo real, faz sentido utilizarmos uma arquitetura orientada a eventos para lidar com o caso, e vamos destrinchar um pouco essa projeção de um SaaS rodando em produção no mercado, com vários clientes, mais ao final deste documento. Por enquanto, por se tratar de uma POC, trabalhar com event-driven architecture poderia ser utilizar algo grande demais para uma proposta simples, portanto, a POC poderá utilizar cron jobs para processos mais simples, conforme será explicado.
+The assistant needs to function in two flows:
+- Users can request inventory information from the agent, and the agent will collect recent information to respond to the user (conversational flow)
+- The agent needs to know when inventory levels are low and take action based on that (proactive flow)
 
-O **fluxo proativo** será utilizado para reabastecimento dos estoques. A ideia é um sistema integrado com um agente, esse sistema, na POC, terá um cron job configurado para consultar a base de dados e verificar a quantidade de produtos em estoque. Ao recuperar essa informação, caso os estoques estejam abaixo do limite definido, ele irá consultar o agente, passando a situação atual e também as ferramentas (funções) da api que podem ser utilizadas de acordo com cada decisão da LLM, em um processo de tool calling. A api recebe a resposta com a definição de qual função deve ser executada e como será executada.
+On this last point, some considerations:
+- Inventory will have a minimum limit that is not necessarily fixed.
+- The limit can vary according to tenant, product type, specific inventory location, among other variables
+- We could program an interface where the user defines their inventory limits, however, we would be wasting the opportunity to use AI and collected data to our advantage. It doesn't make sense to have something so manual when we can optimize and let the end user not worry about certain indicators.
 
-Por outro lado, é importante definir como esse limite, esse threshold, será computado. Utilizaremos uma ferramenta de previsão de séries temporais para definir esse threshold, por tenant, por estoque, por produto etc.. dependendo das regras de negócio que serão aplicadas. Para isso, utilizaremos este mesmo Cron Job - que roda em um intervalo de minutos ou horas - para alimentar a ferramenta que fará a previsão das séries temporais com os dados atuais do banco. Essa ferramenta calcula valores mais assertivos de limite mínimo de estoque baseado em dados e estatísticas. Se o valor que consta no estoque já for abaixo do valor mínimo, imediatamente esse serviço vai se comunicar com o agente de IA que irá decidir o que fazer.
+Therefore, it would be interesting to use artificial intelligence or machine learning tools to determine what this minimum limit, this threshold, would be. We will have some elements in our system that can help with this control:
 
+1 - The limit will be data persisted in the database.
 
-![Fluxo proativo](./docs/stock-proactive-flow.png)
+2 - The limit will preferably be changed by the system itself in an intelligent way, with the help of predictions.
 
+3 - A time series forecasting tool will be used (e.g., Prophet, statsmodels...) to update minimum limits dynamically.
 
-É importante que o intervalo não seja curto demais de modo a não sobrecarregar os componentes do sistema. Considerando que, caso a POC futuramente se torne um SaaS em ambiente produtivo, terão diversos agentes acessando simultaneamente o banco de dados para recolher essas informações. Um intervalo curto demais poderia sobrecarregar o banco, assim gerando gargalos ou exigindo uma quantidade excessiva de instâncias a serem escaladas.
+The reason for choosing a tool other than the LLM itself to make this prediction is that it would be very expensive to use the LLM every time an event is triggered due to a change in inventory. Therefore, the time series forecasting tool "protects" the agent from being called every time. The goal is that the agent is only requested in this case when inventory levels are low, for decision-making.
 
-Outro fator é o custo da LLM. LLMs free trial tem um limite de uso e as pagas podem acabar cobrando um valor alto caso haja uma quantidade excessiva de requisições em um curto período. 
+**Summary:**
+    Agent -> Decision-making
+    Time series forecasting -> Business-related calculations
 
-Uma opção viável na lógica da aplicação seria utilizar uma arquitetura orientada a eventos. Na arquitetura orientada a eventos, os componentes se comunicam de forma mais desacoplada, através de tópicos e filas onde mensagens são "postadas" e aguardam até serem consumidas por algum outro componente. Essa abordagem é interessante e faz bastante sentido se pensarmos em um SaaS em produção, onde é importante escalar quando necessário e persistir mensagens ainda que algum componente falhe. A questão é que em uma POC talvez uma api com um Cron Job mais simples já fosse suficiente. Um sistema mais event-driven, talvez com Change Data Capture, onde haja um stream de eventos que seja processada por workers, pode ser uma boa abordagem em um mundo onde o SaaS já estivesse no mercado e sendo amplamente utilizado.
+### Conversational Flow (on-demand)
 
-
-## Protocolos de Comunicação
-
-Nesta seção serão descritos os protocolos de comunicação utilizados entre os diferentes componentes do sistema, assim como as decisões arquiteturais por trás de cada escolha.
-O objetivo em cada escolha é sempre garantir clareza, baixo acoplamento e facilitar uma evolução futura da arquitetura.
-
-### Comunicação Externa (Cliente ↔ API)
-
-A comunicação entre clientes (interface web/chat) e a aplicação backend é realizada via HTTP/REST.
-
-O protocolo HTTP foi escolhido por ser amplamente adotado, simples de integrar e adequado para interações síncronas, como consultas conversacionais e comandos diretos do usuário.
-
-
-### Comunicação Interna (Componentes da Aplicação)
-
-Dentro da aplicação, a comunicação entre componentes ocorre de forma direta, via chamadas de métodos e funções, respeitando a separação de responsabilidades entre camadas (API, services, agent orchestrator, tools).
-Para a POC, a ideia foi fazer uma comunicação direta em memória, evitando complexidade desnecessária. Em um cenário produtivo, alguns desses componentes poderiam se comunicar através de mensageria ou eventos.
+The **conversational flow** will be used for querying inventory information. The idea is for store managers to have an interface to query their inventory information in a simple and intuitive way. When asking a question to the chatbot, the agent can query information obtained from a data retrieval layer (RAG) - presented here only conceptually - composed of persisted or collected-on-demand information. If the inventory information for that tenant is old, the agent will make an active query to the service to collect new data.
 
 
-### Comunicação com o Agente de IA
+![Conversational Flow](./docs/stock-conversational-flow.png)
 
-A comunicação com o agente de IA segue o padrão de tool calling, onde o agente recebe um contexto estruturado contendo informações do tenant, estado do sistema e um conjunto explícito de ferramentas disponíveis.
-Importante destacar que o agente não executa lógica de negócio diretamente, ele retorna uma decisão estruturada indicando qual ferramenta deve ser utilizada e com quais parâmetros. A execução efetiva dessas ações permanece sob responsabilidade da API.
+### Proactive Flow (batch / schedule)
 
-Na POC, o comportamento da LLM é simulado, mantendo o foco na arquitetura e orquestração do fluxo decisório. Uma evolução natural passaria por avaliar dentre as LLMs de mercado qual se adequaria melhor ao contexto da operação que o sistema engloba, assim como questões de custo, entre outros.
+Before diving into the details of the proactive flow, we need to understand the application's context. If we consider a large-scale system with thousands of tenants and the need for real-time updates, it makes sense to use an event-driven architecture to handle the case, and we will break down this projection of a SaaS running in production in the market, with multiple clients, later in this document. For now, since this is a POC, working with event-driven architecture might be using something too large for a simple proposal. Therefore, the POC can use scheduled jobs for simpler processes, as will be explained.
 
-### Evolução para MCP (conceitual)
+The **proactive flow** will be used for inventory restocking. The idea is an integrated system with an agent. This system, in the POC, will have a scheduled job configured to query the database and check the quantity of products in inventory. When retrieving this information, if inventory levels are below the defined limit, it will consult the agent, passing the current situation and also the API tools (functions) that can be used according to each LLM decision, in a tool calling process. The API receives the response with the definition of which function should be executed and how it will be executed.
 
-O Orquestrador de Agentes foi desenhado de forma a permitir a adoção futura do Model Context Protocol (MCP), que padroniza a troca de contexto, ferramentas e mensagens entre modelos de linguagem e aplicações.
-Embora o MCP não esteja implementado nesta POC, a separação clara de contexto, ferramentas e decisões permite que o agente seja facilmente adaptado para um ambiente compatível com esse protocolo.
+On the other hand, it is important to define how this limit, this threshold, will be computed. We will use a time series forecasting tool to define this threshold, by tenant, by inventory, by product, etc., depending on the business rules that will be applied. For this, we will use this same scheduled job - which runs at minute or hour intervals - to feed the tool that will forecast time series with current database data. This tool calculates more accurate minimum inventory limit values based on data and statistics. If the value currently in inventory is already below the minimum value, this service will immediately communicate with the AI agent, which will decide what to do.
+
+
+![Proactive Flow](./docs/stock-proactive-flow.png)
+
+
+It is important that the interval is not too short so as not to overload the system components. Considering that if the POC eventually becomes a SaaS in a production environment, there will be several agents simultaneously accessing the database to collect this information. An interval that is too short could overload the database, thus creating bottlenecks or requiring an excessive number of instances to be scaled.
+
+Another factor is the cost of the LLM. Free trial LLMs have a usage limit, and paid ones can end up charging a high amount if there is an excessive number of requests in a short period.
+
+A viable option in the application logic would be to use an event-driven architecture. In event-driven architecture, components communicate in a more decoupled way, through topics and queues where messages are "posted" and wait until they are consumed by some other component. This approach is interesting and makes a lot of sense if we think of a SaaS in production, where it is important to scale when necessary and persist messages even if a component fails. The issue is that in a POC, perhaps an API with a simpler scheduled job would be sufficient. A more event-driven system, perhaps with Change Data Capture, where there is an event stream that is processed by workers, could be a good approach in a world where the SaaS is already on the market and being widely used.
+
+
+## Communication Protocols
+
+This section describes the communication protocols used between different system components, as well as the architectural decisions behind each choice.
+The goal in each choice is always to ensure clarity, low coupling, and facilitate future architecture evolution.
+
+### External Communication (Client ↔ API)
+
+Communication between clients (web/chat interface) and the backend application is done via HTTP/REST.
+
+The HTTP protocol was chosen because it is widely adopted, simple to integrate, and suitable for synchronous interactions, such as conversational queries and direct user commands.
+
+
+### Internal Communication (Application Components)
+
+Within the application, communication between components occurs directly, via method and function calls, respecting the separation of responsibilities between layers (API, services, agent orchestrator, tools).
+For the POC, the idea was to have direct in-memory communication, avoiding unnecessary complexity. In a production scenario, some of these components could communicate through messaging or events.
+
+
+### Communication with the AI Agent
+
+Communication with the AI agent follows the tool calling pattern, where the agent receives a structured context containing tenant information, system state, and an explicit set of available tools.
+It is important to note that the agent does not execute business logic directly; it returns a structured decision indicating which tool should be used and with what parameters. The actual execution of these actions remains under the API's responsibility.
+
+In the POC, the LLM's behavior is simulated, keeping the focus on the architecture and orchestration of the decision flow. A natural evolution would involve evaluating which market LLMs would best fit the context of the operation that the system encompasses, as well as cost issues, among others.
+
+### Evolution to MCP (conceptual)
+
+The Agent Orchestrator was designed to allow future adoption of the Model Context Protocol (MCP), which standardizes the exchange of context, tools, and messages between language models and applications.
+Although MCP is not implemented in this POC, the clear separation of context, tools, and decisions allows the agent to be easily adapted to an environment compatible with this protocol.
 
 ## Troubleshooting
 
-### Permissão ao executar Docker no Linux / WSL
+### Permission Issues When Running Docker on Linux / WSL
 
-Em alguns ambientes Linux ou WSL, pode ocorrer o erro de permissão ao tentar executar comandos docker. Exemplo de erro:
+In some Linux or WSL environments, permission errors may occur when trying to run Docker commands. Example error:
 
 ```
 permission denied while trying to connect to the Docker daemon socket
 ```
 
-Neste caso, duas soluções comuns seriam:
+In this case, two common solutions would be:
 
-- Executar o comando com sudo:
+- Run the command with sudo:
   sudo docker compose up --build
 
-- Ou adicionar o usuário ao grupo docker (requer logout/login):
+- Or add the user to the docker group (requires logout/login):
   sudo usermod -aG docker $USER
-
